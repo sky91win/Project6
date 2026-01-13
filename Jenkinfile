@@ -1,0 +1,26 @@
+
+pipeline {
+    agent any
+    stages {
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/example/sample-app.git'
+            }
+        }
+        stage('Build') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+        stage('SonarQube Scan') {
+            steps {
+                echo 'Running SonarQube Scan'
+            }
+        }
+        stage('Docker Build') {
+            steps {
+                sh 'docker build -t sample-app:1.0 .'
+            }
+        }
+    }
+}
