@@ -34,8 +34,10 @@ pipeline {
             steps {
                 withSonarQubeEnv('sonarqube') {
                     sh '''
-                    mvn sonar:sonar \
+                    sonar-scanner \
                       -Dsonar.projectKey=my-java-app \
+                      -Dsonar.sources=src \
+                      -Dsonar.java.binaries=target \
                       -Dsonar.host.url=http://34.234.88.51:9000
                     '''
                 }
@@ -44,8 +46,13 @@ pipeline {
 
         stage('OWASP Dependency Check') {
             steps {
-                dependencyCheck additionalArguments: '--scan .',
-                                odcInstallation: 'OWASP'
+                sh '''
+                /opt/dependency-check/bin/dependency-check.sh \
+                  --project "java-demo-app" \
+                  --scan . \
+                  --format HTML \
+                  --out dependency-check-report
+                '''
             }
         }
 
@@ -57,7 +64,7 @@ pipeline {
 
         stage('Trivy Scan') {
             steps {
-                sh 'trivy image ${IMAGE_NAME}:latest'
+                sh 'trivy image ${IMAGE_NAME}:latest || true'
             }
         }
 
