@@ -87,7 +87,7 @@ pipeline {
                 if command -v docker >/dev/null 2>&1; then
                   docker stop ${IMAGE_NAME} || true
                   docker rm ${IMAGE_NAME} || true
-                  docker run -d --name ${IMAGE_NAME} -p 8080:8080 ${IMAGE_NAME}:latest
+                  docker run -d --name ${IMAGE_NAME} -p 8085:8085 ${IMAGE_NAME}:latest
                 else
                   echo "⚠ Docker not installed, skipping container run"
                 fi
