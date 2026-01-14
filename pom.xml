@@ -1,11 +1,14 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="
+           http://maven.apache.org/POM/4.0.0
+           http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- ✅ Spring Boot Parent (VERY IMPORTANT) -->
+    <!-- ===================== -->
+    <!-- SPRING BOOT PARENT -->
+    <!-- ===================== -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -13,15 +16,23 @@
         <relativePath/>
     </parent>
 
+    <!-- ===================== -->
+    <!-- PROJECT INFO -->
+    <!-- ===================== -->
     <groupId>com.demo</groupId>
     <artifactId>java-demo-app</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
     <name>java-demo-app</name>
+    <description>Spring Boot Demo App with DevSecOps</description>
 
+    <!-- ===================== -->
+    <!-- PROPERTIES -->
+    <!-- ===================== -->
     <properties>
         <java.version>17</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <!-- ===================== -->
@@ -35,31 +46,64 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- Actuator -->
+        <!-- Spring Boot Actuator -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <!-- Test Dependencies -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <!-- ===================== -->
-    <!-- BUILD -->
+    <!-- BUILD PLUGINS -->
     <!-- ===================== -->
     <build>
         <plugins>
 
-            <!-- ✅ Spring Boot Repackage Plugin -->
+            <!-- Spring Boot Maven Plugin -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
 
-            <!-- Sonar -->
+            <!-- SonarQube Maven Plugin -->
             <plugin>
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>
                 <version>3.11.0.3922</version>
+            </plugin>
+
+            <!-- =============================== -->
+            <!-- OWASP DEPENDENCY-CHECK (STABLE) -->
+            <!-- =============================== -->
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>9.0.9</version>
+                <configuration>
+
+                    <!-- Read API key from environment -->
+                    <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
+
+                    <!-- Required for AWS / CI -->
+                    <nvdApiDelay>10000</nvdApiDelay>
+
+                    <!-- Fail build on HIGH & CRITICAL -->
+                    <failBuildOnCVSS>7</failBuildOnCVSS>
+
+                    <!-- Report format -->
+                    <formats>
+                        <format>HTML</format>
+                    </formats>
+
+                </configuration>
             </plugin>
 
         </plugins>
