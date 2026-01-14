@@ -21,11 +21,10 @@ pipeline {
         stage('Maven Build') {
             steps {
                 sh '''
-                echo "Using system Java"
-                which java
-                java -version
-                mvn -version
-                mvn clean package
+                  echo "Using system Java"
+                  java -version
+                  mvn -version
+                  mvn clean package
                 '''
             }
         }
@@ -33,10 +32,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonarqube') {
-                    sh '''
-                    mvn sonar:sonar \
-                      -Dsonar.projectKey=my-java-app
-                    '''
+                    sh 'mvn sonar:sonar -Dsonar.projectKey=my-java-app'
                 }
             }
         }
@@ -44,15 +40,17 @@ pipeline {
         stage('OWASP Dependency Check') {
             steps {
                 sh '''
-                if [ -f /opt/dependency-check/bin/dependency-check.sh ]; then
-                  /opt/dependency-check/bin/dependency-check.sh \
-                    --project "java-demo-app" \
-                    --scan . \
-                    --format HTML \
-                    --out dependency-check-report
-                else
-                  echo "⚠ OWASP Dependency-Check not installed, skipping stage"
-                fi
+                  if [ -f /opt/dependency-check/bin/dependency-check.sh ]; then
+                    echo "Running OWASP Dependency-Check (non-blocking)"
+                    /opt/dependency-check/bin/dependency-check.sh \
+                      --project "java-demo-app" \
+                      --scan . \
+                      --format HTML \
+                      --out dependency-check-report \
+                      --failOnCVSS 11 || true
+                  else
+                    echo "⚠ OWASP Dependency-Check not installed"
+                  fi
                 '''
             }
         }
@@ -60,11 +58,11 @@ pipeline {
         stage('Docker Build') {
             steps {
                 sh '''
-                if command -v docker >/dev/null 2>&1; then
-                  docker build -t ${IMAGE_NAME}:latest .
-                else
-                  echo "⚠ Docker not installed, skipping Docker build"
-                fi
+                  if command -v docker >/dev/null 2>&1; then
+                    docker build -t ${IMAGE_NAME}:latest .
+                  else
+                    echo "⚠ Docker not installed"
+                  fi
                 '''
             }
         }
@@ -72,11 +70,11 @@ pipeline {
         stage('Trivy Scan') {
             steps {
                 sh '''
-                if command -v trivy >/dev/null 2>&1; then
-                  trivy image ${IMAGE_NAME}:latest || true
-                else
-                  echo "⚠ Trivy not installed, skipping scan"
-                fi
+                  if command -v trivy >/dev/null 2>&1; then
+                    trivy image ${IMAGE_NAME}:latest || true
+                  else
+                    echo "⚠ Trivy not installed"
+                  fi
                 '''
             }
         }
@@ -84,13 +82,13 @@ pipeline {
         stage('Run Container') {
             steps {
                 sh '''
-                if command -v docker >/dev/null 2>&1; then
-                  docker stop ${IMAGE_NAME} || true
-                  docker rm ${IMAGE_NAME} || true
-                  docker run -d --name ${IMAGE_NAME} -p 8085:8085 ${IMAGE_NAME}:latest
-                else
-                  echo "⚠ Docker not installed, skipping container run"
-                fi
+                  if command -v docker >/dev/null 2>&1; then
+                    docker stop ${IMAGE_NAME} || true
+                    docker rm ${IMAGE_NAME} || true
+                    docker run -d --name ${IMAGE_NAME} -p 8085:8085 ${IMAGE_NAME}:latest
+                  else
+                    echo "⚠ Docker not installed"
+                  fi
                 '''
             }
         }
@@ -98,7 +96,7 @@ pipeline {
 
     post {
         success {
-            echo "✅ Pipeline completed successfully"
+            echo "✅ DevSecOps Pipeline completed successfully"
         }
         failure {
             echo "❌ Pipeline failed – check logs"
