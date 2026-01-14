@@ -7,7 +7,6 @@ pipeline {
     }
 
     environment {
-        SONARQUBE_ENV = 'sonarqube'
         IMAGE_NAME = 'my-java-app'
     }
 
@@ -16,7 +15,7 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 git branch: 'main',
-                url: 'https://github.com/sky91win/Project6.git'
+                    url: 'https://github.com/sky91win/Project6.git'
             }
         }
 
@@ -32,8 +31,7 @@ pipeline {
                     sh '''
                     mvn sonar:sonar \
                     -Dsonar.projectKey=my-java-app \
-                    -Dsonar.host.url=http://<sonar-ip>:9000 \
-                    -Dsonar.login=<SONAR_TOKEN>
+                    -Dsonar.host.url=http://34.234.88.51:9000
                     '''
                 }
             }
@@ -42,25 +40,29 @@ pipeline {
         stage('OWASP Dependency Check') {
             steps {
                 dependencyCheck additionalArguments: '--scan .',
-                odcInstallation: 'OWASP'
+                                odcInstallation: 'OWASP'
             }
         }
 
         stage('Docker Build') {
             steps {
-                sh 'docker build -t $IMAGE_NAME:latest .'
+                sh 'docker build -t my-java-app:latest .'
             }
         }
 
         stage('Trivy Scan') {
             steps {
-                sh 'trivy image $IMAGE_NAME:latest'
+                sh 'trivy image my-java-app:latest'
             }
         }
 
         stage('Run Container') {
             steps {
-                sh 'docker run -d -p 8080:8080 $IMAGE_NAME:latest'
+                sh '''
+                docker stop my-java-app || true
+                docker rm my-java-app || true
+                docker run -d --name my-java-app -p 8080:8080 my-java-app:latest
+                '''
             }
         }
     }
