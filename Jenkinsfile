@@ -7,6 +7,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = 'my-java-app'
+        NVD_API_KEY = credentials('NVD_API_KEY')
     }
 
     stages {
@@ -18,40 +19,26 @@ pipeline {
             }
         }
 
-        stage('Maven Build') {
+        stage('Maven Build + OWASP Dependency Check') {
             steps {
                 sh '''
                   echo "Using system Java"
                   java -version
                   mvn -version
-                  mvn clean package
+
+                  mvn clean verify \
+                    org.owasp:dependency-check-maven:check
                 '''
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('sonarqube') {
-                    sh 'mvn sonar:sonar -Dsonar.projectKey=my-java-app'
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    withSonarQubeEnv('sonarqube') {
+                        sh 'mvn sonar:sonar -Dsonar.projectKey=my-java-app'
+                    }
                 }
-            }
-        }
-
-        stage('OWASP Dependency Check') {
-            steps {
-                sh '''
-                  if [ -f /opt/dependency-check/bin/dependency-check.sh ]; then
-                    echo "Running OWASP Dependency-Check (non-blocking)"
-                    /opt/dependency-check/bin/dependency-check.sh \
-                      --project "java-demo-app" \
-                      --scan . \
-                      --format HTML \
-                      --out dependency-check-report \
-                      --failOnCVSS 11 || true
-                  else
-                    echo "⚠ OWASP Dependency-Check not installed"
-                  fi
-                '''
             }
         }
 
