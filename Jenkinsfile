@@ -2,11 +2,15 @@ pipeline {
     agent any
 
     tools {
-        maven 'MAVEN'
         jdk 'JDK17'
+        maven 'MAVEN'
     }
 
     environment {
+        // Force JAVA_HOME for Maven on Ubuntu
+        JAVA_HOME = tool(name: 'JDK17', type: 'jdk')
+        PATH = "${env.JAVA_HOME}/bin:${env.PATH}"
+
         IMAGE_NAME = 'my-java-app'
     }
 
@@ -21,7 +25,12 @@ pipeline {
 
         stage('Maven Build') {
             steps {
-                sh 'mvn clean package'
+                sh '''
+                echo "JAVA_HOME=$JAVA_HOME"
+                java -version
+                mvn -version
+                mvn clean package
+                '''
             }
         }
 
@@ -30,8 +39,8 @@ pipeline {
                 withSonarQubeEnv('sonarqube') {
                     sh '''
                     mvn sonar:sonar \
-                    -Dsonar.projectKey=my-java-app \
-                    -Dsonar.host.url=http://34.234.88.51:9000
+                      -Dsonar.projectKey=my-java-app \
+                      -Dsonar.host.url=http://34.234.88.51:9000
                     '''
                 }
             }
@@ -46,24 +55,33 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh 'docker build -t my-java-app:latest .'
+                sh 'docker build -t ${IMAGE_NAME}:latest .'
             }
         }
 
         stage('Trivy Scan') {
             steps {
-                sh 'trivy image my-java-app:latest'
+                sh 'trivy image ${IMAGE_NAME}:latest'
             }
         }
 
         stage('Run Container') {
             steps {
                 sh '''
-                docker stop my-java-app || true
-                docker rm my-java-app || true
-                docker run -d --name my-java-app -p 8080:8080 my-java-app:latest
+                docker stop ${IMAGE_NAME} || true
+                docker rm ${IMAGE_NAME} || true
+                docker run -d --name ${IMAGE_NAME} -p 8080:8080 ${IMAGE_NAME}:latest
                 '''
             }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Pipeline completed successfully"
+        }
+        failure {
+            echo "❌ Pipeline failed – check logs"
         }
     }
 }
