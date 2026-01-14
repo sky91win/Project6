@@ -2,15 +2,10 @@ pipeline {
     agent any
 
     tools {
-        jdk 'JDK17'
         maven 'MAVEN'
     }
 
     environment {
-        // Force JAVA_HOME for Maven on Ubuntu
-        JAVA_HOME = tool(name: 'JDK17', type: 'jdk')
-        PATH = "${env.JAVA_HOME}/bin:${env.PATH}"
-
         IMAGE_NAME = 'my-java-app'
     }
 
@@ -26,7 +21,8 @@ pipeline {
         stage('Maven Build') {
             steps {
                 sh '''
-                echo "JAVA_HOME=$JAVA_HOME"
+                echo "Using system Java"
+                which java
                 java -version
                 mvn -version
                 mvn clean package
