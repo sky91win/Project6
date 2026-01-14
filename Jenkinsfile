@@ -59,22 +59,38 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh 'docker build -t ${IMAGE_NAME}:latest .'
+                sh '''
+                if command -v docker >/dev/null 2>&1; then
+                  docker build -t ${IMAGE_NAME}:latest .
+                else
+                  echo "⚠ Docker not installed, skipping Docker build"
+                fi
+                '''
             }
         }
 
         stage('Trivy Scan') {
             steps {
-                sh 'trivy image ${IMAGE_NAME}:latest || true'
+                sh '''
+                if command -v trivy >/dev/null 2>&1; then
+                  trivy image ${IMAGE_NAME}:latest || true
+                else
+                  echo "⚠ Trivy not installed, skipping scan"
+                fi
+                '''
             }
         }
 
         stage('Run Container') {
             steps {
                 sh '''
-                docker stop ${IMAGE_NAME} || true
-                docker rm ${IMAGE_NAME} || true
-                docker run -d --name ${IMAGE_NAME} -p 8080:8080 ${IMAGE_NAME}:latest
+                if command -v docker >/dev/null 2>&1; then
+                  docker stop ${IMAGE_NAME} || true
+                  docker rm ${IMAGE_NAME} || true
+                  docker run -d --name ${IMAGE_NAME} -p 8080:8080 ${IMAGE_NAME}:latest
+                else
+                  echo "⚠ Docker not installed, skipping container run"
+                fi
                 '''
             }
         }
