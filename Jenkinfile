@@ -1,25 +1,66 @@
-
 pipeline {
     agent any
+
+    tools {
+        maven 'MAVEN'
+        jdk 'JDK17'
+    }
+
+    environment {
+        SONARQUBE_ENV = 'sonarqube'
+        IMAGE_NAME = 'my-java-app'
+    }
+
     stages {
-        stage('Checkout') {
+
+        stage('Checkout Code') {
             steps {
-                git 'https://github.com/example/sample-app.git'
+                git branch: 'main',
+                url: 'https://github.com/your-repo/my-java-app.git'
             }
         }
-        stage('Build') {
+
+        stage('Maven Build') {
             steps {
                 sh 'mvn clean package'
             }
         }
-        stage('SonarQube Scan') {
+
+        stage('SonarQube Analysis') {
             steps {
-                echo 'Running SonarQube Scan'
+                withSonarQubeEnv('sonarqube') {
+                    sh '''
+                    mvn sonar:sonar \
+                    -Dsonar.projectKey=my-java-app \
+                    -Dsonar.host.url=http://<sonar-ip>:9000 \
+                    -Dsonar.login=<SONAR_TOKEN>
+                    '''
+                }
             }
         }
+
+        stage('OWASP Dependency Check') {
+            steps {
+                dependencyCheck additionalArguments: '--scan .',
+                odcInstallation: 'OWASP'
+            }
+        }
+
         stage('Docker Build') {
             steps {
-                sh 'docker build -t sample-app:1.0 .'
+                sh 'docker build -t $IMAGE_NAME:latest .'
+            }
+        }
+
+        stage('Trivy Scan') {
+            steps {
+                sh 'trivy image $IMAGE_NAME:latest'
+            }
+        }
+
+        stage('Run Container') {
+            steps {
+                sh 'docker run -d -p 8080:8080 $IMAGE_NAME:latest'
             }
         }
     }
